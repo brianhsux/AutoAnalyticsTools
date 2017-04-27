@@ -354,7 +354,7 @@ def storage2xls(yearAndmonth, data_index, segment_new_mechanism):
 
     wb.save('GA_analytics_result.xls')
 
-def storage_gadata(analytics_month_list, segment_new_mechanism):
+def prepare_data_title():
     log_info = "Prepare ga data: "
     print(log_info)
 
@@ -419,6 +419,9 @@ def storage_gadata(analytics_month_list, segment_new_mechanism):
     ws_CDNDataPerFile.write(mau_new_mechenism_index + 3, 0, total_title)
 
     wb_CDNDataArrangeTotal.save('GA_analytics_result.xls')
+
+def storage_gadata(analytics_month_list, segment_new_mechanism):
+    prepare_data_title()
 
     data_index = 1
     for yearAndmonth in analytics_month_list:
