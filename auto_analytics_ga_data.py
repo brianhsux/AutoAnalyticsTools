@@ -198,7 +198,7 @@ def get_results_mau(results):
     else:
       print ('No results found')  
 
-def getDataPermonth(year, month, segment_new_mechanism):
+def getDataPermonth(year, month, segment_new_mechanism_1, segment_new_mechanism_2):
     # Define the auth scopes to request.
     scope = ['https://www.googleapis.com/auth/analytics.readonly']
 
@@ -244,8 +244,12 @@ def getDataPermonth(year, month, segment_new_mechanism):
         end_date_combine, 'ga:avgSessionDuration')))
     mau_results_100p = (get_results_mau(get_gaMau(service, gaid_100p, end_date_combine, end_date_combine, 
         'ga:30dayUsers', 'ga:date')))
-    mau_new_mechenism_results_100p = get_results_mau(get_segmentMau(service, gaid_100p, end_date_combine, 
-        end_date_combine, 'ga:30dayUsers', 'ga:date', segment_new_mechanism))
+    mau_new_mechenism_results_100p_1 = get_results_mau(get_segmentMau(service, gaid_100p, end_date_combine, 
+        end_date_combine, 'ga:30dayUsers', 'ga:date', segment_new_mechanism_1))
+    mau_new_mechenism_results_100p_2 = get_results_mau(get_segmentMau(service, gaid_100p, end_date_combine, 
+        end_date_combine, 'ga:30dayUsers', 'ga:date', segment_new_mechanism_2))    
+    mau_new_mechenism_results_100p = mau_new_mechenism_results_100p_1 + mau_new_mechenism_results_100p_2
+
 
     sessions_results_10p = (get_results_value(get_gaData(service, gaid_10p, start_date_combine, 
         end_date_combine, 'ga:sessions')))
@@ -257,8 +261,11 @@ def getDataPermonth(year, month, segment_new_mechanism):
         end_date_combine, 'ga:avgSessionDuration')))
     mau_results_10p = (get_results_mau(get_gaMau(service, gaid_10p, end_date_combine, end_date_combine, 
         'ga:30dayUsers', 'ga:date')))
-    mau_new_mechenism_results_10p = (get_results_mau(get_segmentMau(service, gaid_10p, end_date_combine, 
-        end_date_combine, 'ga:30dayUsers', 'ga:date', segment_new_mechanism)))
+    mau_new_mechenism_results_10p_1 = (get_results_mau(get_segmentMau(service, gaid_10p, end_date_combine, 
+        end_date_combine, 'ga:30dayUsers', 'ga:date', segment_new_mechanism_1)))
+    mau_new_mechenism_results_10p_2 = (get_results_mau(get_segmentMau(service, gaid_10p, end_date_combine, 
+        end_date_combine, 'ga:30dayUsers', 'ga:date', segment_new_mechanism_2)))    
+    mau_new_mechenism_results_10p = int(mau_new_mechenism_results_10p_1) + int(mau_new_mechenism_results_10p_2)
 
     sample_rate = 10
 
@@ -272,7 +279,7 @@ def getDataPermonth(year, month, segment_new_mechanism):
 def getSecondDecimalPlace(number):
     return float('{:.2f}'.format(number))
 
-def storage2xls(yearAndmonth, data_index, segment_new_mechanism):
+def storage2xls(yearAndmonth, data_index, segment_new_mechanism_1, segment_new_mechanism_2):
     print('storage2xls: {0}'.format(yearAndmonth))
     year_str = str(yearAndmonth)[0:4]
     month_str = str(yearAndmonth)[4:6]    
@@ -292,7 +299,7 @@ def storage2xls(yearAndmonth, data_index, segment_new_mechanism):
     wb = copy(rb) # a writable copy (I can't read values out of this, only write to it)
     w_sheet = wb.get_sheet(0) # the sheet to write to within the writable copy
 
-    ga_results = getDataPermonth(year, month, segment_new_mechanism)
+    ga_results = getDataPermonth(year, month, segment_new_mechanism_1, segment_new_mechanism_2)
 
     #write Sessions data
     print('write Sessions data')
@@ -352,6 +359,15 @@ def storage2xls(yearAndmonth, data_index, segment_new_mechanism):
     w_sheet.write(mau_new_mechenism_index + 2, data_index, mau_new_mechenism_10p)
     w_sheet.write(mau_new_mechenism_index + 3, data_index, mau_new_mechenism_100p + mau_new_mechenism_10p)
 
+    #write MAU percentage data
+    percent_mau_compare_index = mau_new_mechenism_index + 5
+    mau_new_mechenism_percentage = (str(getSecondDecimalPlace((mau_new_mechenism_10p / 
+        (mau_100p + mau_10p)) * 100)) + '%')
+    mau_old_mechenism_percentage = (str(getSecondDecimalPlace((1 - (mau_new_mechenism_10p / 
+        (mau_100p + mau_10p))) * 100)) + '%')
+    w_sheet.write(percent_mau_compare_index, data_index, mau_new_mechenism_percentage)
+    w_sheet.write(percent_mau_compare_index + 1, data_index, mau_old_mechenism_percentage)
+
     wb.save('GA_analytics_result.xls')
 
 def prepare_data_title():
@@ -365,6 +381,8 @@ def prepare_data_title():
     screenviewsPerSession_title = 'GA ScreenviewsPerSession'
     avgSessionDuration_title = 'GA AvgSessionDuration'
     total_title = 'Total'
+    mau_new_title = 'GA new mechenism MAU %'
+    mau_old_title = 'GA old mechenism MAU %'
 
     mau_str = '30dayUsers'
     sessions_str = 'sessions'
@@ -418,29 +436,37 @@ def prepare_data_title():
     ws_CDNDataPerFile.write(mau_new_mechenism_index + 2, 0, gaid_10p_str)
     ws_CDNDataPerFile.write(mau_new_mechenism_index + 3, 0, total_title)
 
+    #write MAU percent data title
+    percent_mau_compare_index = mau_new_mechenism_index + 5
+    ws_CDNDataPerFile.write(percent_mau_compare_index, 0, mau_new_title)
+    ws_CDNDataPerFile.write(percent_mau_compare_index + 1, 0, mau_old_title)    
+
     wb_CDNDataArrangeTotal.save('GA_analytics_result.xls')
 
-def storage_gadata(analytics_month_list, segment_new_mechanism):
+def storage_gadata(analytics_month_list, segment_new_mechanism_1, segment_new_mechanism_2):
     prepare_data_title()
 
     data_index = 1
     for yearAndmonth in analytics_month_list:
-        storage2xls(yearAndmonth, data_index, segment_new_mechanism)
+        storage2xls(yearAndmonth, data_index, segment_new_mechanism_1, segment_new_mechanism_2)
         data_index = data_index + 1
 
 def getJsonFileInfo():
     with open('ga_analytics_setting.json') as data_file:
         data = json.load(data_file)
-    return [data['analytics_month_list'], data['appVersion']]
+    return [data['analytics_month_list'], data['appVersion_1'], data['appVersion_2']]
 
 def main():
     print(getJsonFileInfo()[0])
     print(getJsonFileInfo()[1])
+    print(getJsonFileInfo()[2])
     analytics_month_list = getJsonFileInfo()[0]
     segment_conditon_pre = 'sessions::condition::ga:appVersion[]'
-    json_compress_mechenism_appVersion = getJsonFileInfo()[1]
-    segment_new_mechanism = segment_conditon_pre + json_compress_mechenism_appVersion    
-    storage_gadata(analytics_month_list, segment_new_mechanism)
+    json_compress_mechenism_appVersion_1 = getJsonFileInfo()[1]
+    json_compress_mechenism_appVersion_2 = getJsonFileInfo()[2]
+    segment_new_mechanism_1 = segment_conditon_pre + json_compress_mechenism_appVersion_1
+    segment_new_mechanism_2 = segment_conditon_pre + json_compress_mechenism_appVersion_2
+    storage_gadata(analytics_month_list, segment_new_mechanism_1, segment_new_mechanism_2)
 
 if __name__ == '__main__':
     main()
